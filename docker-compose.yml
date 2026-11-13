@@ -1,0 +1,35 @@
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: continuum-postgres
+    environment:
+      POSTGRES_DB: continuum
+      POSTGRES_USER: continuum
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev123}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  mongo:
+    image: mongo:7
+    container_name: continuum-mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: continuum
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-dev123}
+    ports:
+      - "127.0.0.1:27018:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:7-alpine
+    container_name: continuum-redis
+    ports:
+      - "127.0.0.1:6380:6379"
+
+
+volumes:
+  postgres_data:
+  mongo_data:
