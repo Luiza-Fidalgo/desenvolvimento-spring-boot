@@ -2,10 +2,12 @@ package com.continuum.control.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import com.continuum.control.model.enums.TipoMissao;
 import com.continuum.control.model.enums.PrioridadeMissao;
+import com.continuum.control.model.enums.SituacaoAnomalia;
 import com.continuum.control.model.enums.SituacaoMissao;
 
 @Entity
@@ -47,74 +49,54 @@ public class Missao {
         inverseJoinColumns = @JoinColumn(name = "agente_id"))
     private Set<Agente> agentes = new HashSet<>();
 
-    public Missao() {
-    }
+    // Informacoes de encerramento, preenchidas somente ao finalizar uma missao.
+    @Column(length = 200)
+    private String resultado;
 
-    public Long getId() {
-        return id;
-    }
+    @Column(length = 2000)
+    private String resumo;
 
-    public String getCodigo() {
-        return codigo;
-    }
+    @Column(length = 1000)
+    private String impactoObservado;
 
-    public void setCodigo(String codigo) {
-        this.codigo = codigo;
-    }
+    @Column(length = 2000)
+    private String observacoesEncerramento;
 
-    public String getObjetivo() {
-        return objetivo;
-    }
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private SituacaoAnomalia situacaoFinalAnomalia;
 
-    public void setObjetivo(String objetivo) {
-        this.objetivo = objetivo;
-    }
+    private LocalDateTime encerradaEm;
 
-    public Anomalia getAnomalia() {
-        return anomalia;
-    }
+    public Missao() { }
 
-    public void setAnomalia(Anomalia anomalia) {
-        this.anomalia = anomalia;
-    }
-
-    public LocalDate getDestinoTemporal() {
-        return destinoTemporal;
-    }
-
-    public void setDestinoTemporal(LocalDate destinoTemporal) {
-        this.destinoTemporal = destinoTemporal;
-    }
-
-    public TipoMissao getTipo() {
-        return tipo;
-    }
-
-    public void setTipo(TipoMissao tipo) {
-        this.tipo = tipo;
-    }
-
-    public PrioridadeMissao getPrioridade() {
-        return prioridade;
-    }
-
-    public void setPrioridade(PrioridadeMissao prioridade) {
-        this.prioridade = prioridade;
-    }
-
-    public SituacaoMissao getSituacao() {
-        return situacao;
-    }
-
-    public void setSituacao(SituacaoMissao situacao) {
-        this.situacao = situacao;
-    }
-
-    public Set<Agente> getAgentes() {
-        return agentes;
-    }
-
-    public void setAgentes(Set<Agente> agentes) {
-        this.agentes = agentes;
-    }
+    public Long getId() { return id; }
+    public String getCodigo() { return codigo; }
+    public void setCodigo(String codigo) { this.codigo = codigo; }
+    public String getObjetivo() { return objetivo; }
+    public void setObjetivo(String objetivo) { this.objetivo = objetivo; }
+    public Anomalia getAnomalia() { return anomalia; }
+    public void setAnomalia(Anomalia anomalia) { this.anomalia = anomalia; }
+    public LocalDate getDestinoTemporal() { return destinoTemporal; }
+    public void setDestinoTemporal(LocalDate destinoTemporal) { this.destinoTemporal = destinoTemporal; }
+    public TipoMissao getTipo() { return tipo; }
+    public void setTipo(TipoMissao tipo) { this.tipo = tipo; }
+    public PrioridadeMissao getPrioridade() { return prioridade; }
+    public void setPrioridade(PrioridadeMissao prioridade) { this.prioridade = prioridade; }
+    public SituacaoMissao getSituacao() { return situacao; }
+    public void setSituacao(SituacaoMissao situacao) { this.situacao = situacao; }
+    public Set<Agente> getAgentes() { return agentes; }
+    public void setAgentes(Set<Agente> agentes) { this.agentes = agentes; }
+    public String getResultado() { return resultado; }
+    public void setResultado(String resultado) { this.resultado = resultado; }
+    public String getResumo() { return resumo; }
+    public void setResumo(String resumo) { this.resumo = resumo; }
+    public String getImpactoObservado() { return impactoObservado; }
+    public void setImpactoObservado(String impactoObservado) { this.impactoObservado = impactoObservado; }
+    public String getObservacoesEncerramento() { return observacoesEncerramento; }
+    public void setObservacoesEncerramento(String observacoesEncerramento) { this.observacoesEncerramento = observacoesEncerramento; }
+    public SituacaoAnomalia getSituacaoFinalAnomalia() { return situacaoFinalAnomalia; }
+    public void setSituacaoFinalAnomalia(SituacaoAnomalia situacaoFinalAnomalia) { this.situacaoFinalAnomalia = situacaoFinalAnomalia; }
+    public LocalDateTime getEncerradaEm() { return encerradaEm; }
+    public void setEncerradaEm(LocalDateTime encerradaEm) { this.encerradaEm = encerradaEm; }
 }

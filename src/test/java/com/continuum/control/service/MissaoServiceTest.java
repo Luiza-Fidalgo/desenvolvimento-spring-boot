@@ -2,7 +2,10 @@ package com.continuum.control.service;
 
 import com.continuum.control.dto.MissaoRequest;
 import com.continuum.control.dto.MissaoResponse;
+import com.continuum.control.dto.AutorizacaoRequest;
+import com.continuum.control.dto.EncerramentoMissaoRequest;
 import com.continuum.control.model.Agente;
+import com.continuum.control.model.Autorizacao;
 import com.continuum.control.model.Anomalia;
 import com.continuum.control.model.Missao;
 import com.continuum.control.model.enums.PrioridadeMissao;
@@ -11,6 +14,7 @@ import com.continuum.control.model.enums.SituacaoAnomalia;
 import com.continuum.control.model.enums.SituacaoMissao;
 import com.continuum.control.model.enums.TipoMissao;
 import com.continuum.control.repository.AgenteRepository;
+import com.continuum.control.repository.AutorizacaoRepository;
 import com.continuum.control.repository.AnomaliaRepository;
 import com.continuum.control.repository.MissaoRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,13 +36,15 @@ class MissaoServiceTest {
     private AnomaliaRepository anomaliaRepository;
     private AgenteRepository agenteRepository;
     private MissaoService service;
+    private AutorizacaoRepository autorizacaoRepository;
 
     @BeforeEach
     void preparar() {
         repository = mock(MissaoRepository.class);
         anomaliaRepository = mock(AnomaliaRepository.class);
         agenteRepository = mock(AgenteRepository.class);
-        service = new MissaoService(repository, anomaliaRepository, agenteRepository);
+        autorizacaoRepository = mock(AutorizacaoRepository.class);
+        service = new MissaoService(repository, anomaliaRepository, agenteRepository, autorizacaoRepository);
     }
 
     private MissaoRequest dados() {
@@ -166,5 +172,118 @@ class MissaoServiceTest {
         when(repository.save(any(Missao.class))).thenAnswer(chamada -> chamada.getArgument(0));
 
         assertEquals(SituacaoMissao.CANCELADA, service.cancelar(1L).getSituacao());
+    }
+
+
+    private AutorizacaoRequest dadosAutorizacao() {
+        AutorizacaoRequest dados = new AutorizacaoRequest();
+        dados.setResponsavel("Supervisor");
+        dados.setObservacao("Missao aprovada");
+        return dados;
+    }
+
+    private EncerramentoMissaoRequest dadosEncerramento() {
+        EncerramentoMissaoRequest dados = new EncerramentoMissaoRequest();
+        dados.setResultado("Objetivo atingido");
+        dados.setResumo("Operacao realizada");
+        dados.setImpactoObservado("Baixo");
+        return dados;
+    }
+
+    private Agente agenteDisponivel() {
+        Agente agente = new Agente();
+        agente.setSituacao(SituacaoAgente.DISPONIVEL);
+        return agente;
+    }
+
+    @Test
+    void autorizarMissaoPlanejada() {
+        Missao existente = missao(SituacaoMissao.PLANEJADA);
+        existente.getAgentes().add(agenteDisponivel());
+        when(repository.findById(1L)).thenReturn(Optional.of(existente));
+        when(repository.save(any(Missao.class))).thenAnswer(chamada -> chamada.getArgument(0));
+
+        assertEquals(SituacaoMissao.AUTORIZADA,
+                service.autorizar(1L, dadosAutorizacao()).getSituacao());
+        verify(autorizacaoRepository).save(any(Autorizacao.class));
+    }
+
+    @Test
+    void impedirAutorizarSemAgentes() {
+        Missao existente = missao(SituacaoMissao.PLANEJADA);
+        when(repository.findById(1L)).thenReturn(Optional.of(existente));
+
+        ResponseStatusException erro = assertThrows(ResponseStatusException.class,
+                () -> service.autorizar(1L, dadosAutorizacao()));
+        assertEquals(HttpStatus.CONFLICT, erro.getStatusCode());
+        verify(autorizacaoRepository, never()).save(any(Autorizacao.class));
+    }
+
+    @Test
+    void iniciarMissaoEAtualizarAgente() {
+        Missao existente = missao(SituacaoMissao.AUTORIZADA);
+        Agente agente = agenteDisponivel();
+        existente.getAgentes().add(agente);
+        when(repository.findById(1L)).thenReturn(Optional.of(existente));
+        when(repository.save(any(Missao.class))).thenAnswer(chamada -> chamada.getArgument(0));
+
+        assertEquals(SituacaoMissao.EM_EXECUCAO, service.iniciar(1L).getSituacao());
+        assertEquals(SituacaoAgente.EM_MISSAO, agente.getSituacao());
+        verify(agenteRepository).saveAll(any());
+    }
+
+    @Test
+    void iniciarCorrecaoEAlterarAnomalia() {
+        Missao existente = missao(SituacaoMissao.AUTORIZADA);
+        existente.setTipo(TipoMissao.CORRECAO);
+        existente.getAgentes().add(agenteDisponivel());
+        when(repository.findById(1L)).thenReturn(Optional.of(existente));
+        when(repository.save(any(Missao.class))).thenAnswer(chamada -> chamada.getArgument(0));
+
+        service.iniciar(1L);
+
+        assertEquals(SituacaoAnomalia.EM_CORRECAO, existente.getAnomalia().getSituacao());
+        verify(anomaliaRepository).save(any(Anomalia.class));
+    }
+
+    @Test
+    void impedirIniciarSemAutorizacao() {
+        Missao existente = missao(SituacaoMissao.PLANEJADA);
+        existente.getAgentes().add(agenteDisponivel());
+        when(repository.findById(1L)).thenReturn(Optional.of(existente));
+
+        ResponseStatusException erro = assertThrows(ResponseStatusException.class,
+                () -> service.iniciar(1L));
+        assertEquals(HttpStatus.CONFLICT, erro.getStatusCode());
+    }
+
+    @Test
+    void concluirCorrecaoEEstabilizarAnomalia() {
+        Missao existente = missao(SituacaoMissao.EM_EXECUCAO);
+        existente.setTipo(TipoMissao.CORRECAO);
+        existente.getAnomalia().setSituacao(SituacaoAnomalia.EM_CORRECAO);
+        Agente agente = agenteDisponivel();
+        agente.setSituacao(SituacaoAgente.EM_MISSAO);
+        existente.getAgentes().add(agente);
+        when(repository.findById(1L)).thenReturn(Optional.of(existente));
+        when(repository.save(any(Missao.class))).thenAnswer(chamada -> chamada.getArgument(0));
+        EncerramentoMissaoRequest dados = dadosEncerramento();
+        dados.setSituacaoFinalAnomalia(SituacaoAnomalia.ESTABILIZADA);
+
+        assertEquals(SituacaoMissao.CONCLUIDA, service.concluir(1L, dados).getSituacao());
+        assertEquals(SituacaoAnomalia.ESTABILIZADA, existente.getAnomalia().getSituacao());
+        assertEquals(SituacaoAgente.DISPONIVEL, agente.getSituacao());
+    }
+
+    @Test
+    void falharCorrecaoSemResolverAnomalia() {
+        Missao existente = missao(SituacaoMissao.EM_EXECUCAO);
+        existente.setTipo(TipoMissao.CORRECAO);
+        existente.getAnomalia().setSituacao(SituacaoAnomalia.EM_CORRECAO);
+        when(repository.findById(1L)).thenReturn(Optional.of(existente));
+        when(repository.save(any(Missao.class))).thenAnswer(chamada -> chamada.getArgument(0));
+
+        assertEquals(SituacaoMissao.FALHOU, service.falhar(1L, dadosEncerramento()).getSituacao());
+        assertEquals(SituacaoAnomalia.CONFIRMADA, existente.getAnomalia().getSituacao());
     }
 }
