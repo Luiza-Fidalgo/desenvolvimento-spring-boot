@@ -10,4 +10,6 @@ public interface AnomaliaRepository extends JpaRepository<Anomalia, Long> {
     List<Anomalia> findBySituacao(SituacaoAnomalia situacao);
     List<Anomalia> findByRisco(RiscoAnomalia risco);
     List<Anomalia> findByEventoId(Long eventoId);
+    long countBySituacaoNot(SituacaoAnomalia situacao);
+    long countByRiscoAndSituacaoNot(RiscoAnomalia risco, SituacaoAnomalia situacao);
 }

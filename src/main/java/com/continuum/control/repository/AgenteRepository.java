@@ -9,4 +9,5 @@ public interface AgenteRepository extends JpaRepository<Agente, Long> {
     List<Agente> findBySituacao(SituacaoAgente situacao);
     List<Agente> findByEspecialidadeIgnoreCase(String especialidade);
     boolean existsByCodigo(String codigo);
+    long countBySituacao(SituacaoAgente situacao);
 }

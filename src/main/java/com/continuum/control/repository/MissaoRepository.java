@@ -10,4 +10,5 @@ public interface MissaoRepository extends JpaRepository<Missao, Long> {
     List<Missao> findByAnomaliaId(Long anomaliaId);
     List<Missao> findDistinctByAgentesId(Long agenteId);
     boolean existsByCodigo(String codigo);
+    long countBySituacao(SituacaoMissao situacao);
 }
