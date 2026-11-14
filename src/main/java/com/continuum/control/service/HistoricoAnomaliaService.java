@@ -3,10 +3,12 @@ package com.continuum.control.service;
 import com.continuum.control.dto.HistoricoItemResponse;
 import com.continuum.control.model.Anomalia;
 import com.continuum.control.model.Autorizacao;
+import com.continuum.control.model.IntervencaoTemporal;
 import com.continuum.control.model.Missao;
 import com.continuum.control.model.OcorrenciaTemporal;
 import com.continuum.control.repository.AnomaliaRepository;
 import com.continuum.control.repository.AutorizacaoRepository;
+import com.continuum.control.repository.IntervencaoTemporalRepository;
 import com.continuum.control.repository.MissaoRepository;
 import com.continuum.control.repository.OcorrenciaTemporalRepository;
 import org.springframework.http.HttpStatus;
@@ -27,14 +29,17 @@ public class HistoricoAnomaliaService {
     private final MissaoRepository missaoRepository;
     private final AutorizacaoRepository autorizacaoRepository;
     private final OcorrenciaTemporalRepository ocorrenciaRepository;
+    private final IntervencaoTemporalRepository intervencaoRepository;
 
     public HistoricoAnomaliaService(AnomaliaRepository anomaliaRepository, MissaoRepository missaoRepository,
                                     AutorizacaoRepository autorizacaoRepository,
-                                    OcorrenciaTemporalRepository ocorrenciaRepository) {
+                                    OcorrenciaTemporalRepository ocorrenciaRepository,
+                                    IntervencaoTemporalRepository intervencaoRepository) {
         this.anomaliaRepository = anomaliaRepository;
         this.missaoRepository = missaoRepository;
         this.autorizacaoRepository = autorizacaoRepository;
         this.ocorrenciaRepository = ocorrenciaRepository;
+        this.intervencaoRepository = intervencaoRepository;
     }
 
     @Transactional(readOnly = true)
@@ -72,6 +77,17 @@ public class HistoricoAnomaliaService {
             historico.add(new HistoricoItemResponse(ocorrencia.getInstante(),
                     "OCORRENCIA_" + ocorrencia.getTipo().name(), ocorrencia.getDescricao(),
                     ocorrencia.getMissaoId(), ocorrencia.getDetalhes()));
+        }
+
+        for (IntervencaoTemporal intervencao : intervencaoRepository
+                .findByMissao_Anomalia_IdOrderByInstanteAsc(anomaliaId)) {
+            Map<String, Object> dados = new HashMap<>();
+            dados.put("agenteId", intervencao.getAgente().getId());
+            dados.put("justificativa", intervencao.getJustificativa());
+            dados.put("impactoEstimado", intervencao.getImpactoEstimado().name());
+            dados.put("resultadoObservado", intervencao.getResultadoObservado());
+            historico.add(new HistoricoItemResponse(intervencao.getInstante(), "INTERVENCAO",
+                    intervencao.getAcao(), intervencao.getMissao().getId(), dados));
         }
 
         historico.sort(Comparator.comparing(HistoricoItemResponse::getInstante));

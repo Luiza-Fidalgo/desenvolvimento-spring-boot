@@ -44,6 +44,8 @@ public class SegurancaConfig {
                     .hasAnyRole("SUPERVISOR", "ADMINISTRADOR")
 
                 // Agentes registram ocorrencias; a identidade e conferida no servico.
+                .requestMatchers(HttpMethod.POST, "/missoes/*/intervencoes")
+                    .hasAnyRole("AGENTE", "SUPERVISOR", "ADMINISTRADOR")
                 .requestMatchers(HttpMethod.POST, "/missoes/*/ocorrencias")
                     .hasAnyRole("AGENTE", "SUPERVISOR", "ADMINISTRADOR")
                 .requestMatchers(HttpMethod.POST, "/missoes")
